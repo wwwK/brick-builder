@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports = appInfo => {
 
   const config = exports = {};
@@ -11,13 +13,13 @@ module.exports = appInfo => {
   config.security = {
     csrf: {
       enable: false,
-      ignoreJSON: true
+      ignoreJSON: true,
     },
-    domainWhiteList: ['*']
+    domainWhiteList: [ '*' ],
   };
   config.cors = {
-    origin:'*',
-    allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS'
+    origin: '*',
+    allowMethods: 'GET,HEAD,PUT,POST,DELETE,PATCH,OPTIONS',
   };
 
   // add your user config here

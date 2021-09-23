@@ -6,33 +6,68 @@ const execa = require('execa');
 
 const rootDir = process.cwd();
 
-const updateResFile = async res => {
+const dirExits = (path) => {
+  return new Promise(resolve => {
+    fs.access(path, err => {
+      if(err) {
+        resolve(false)
+      } else {
+        resolve(true);
+      }
+    });
+  });
+};
+
+const writeFile = (content, path) => {
+  return new Promise(resolve => {
+    const writerStream = fs.createWriteStream(path);
+    writerStream.on('close', () => {
+      console.log('请求写入成功');
+      resolve(true);
+    })
+    execa('echo', [ content ]).stdout.pipe(writerStream);
+  })
+};
+
+const updateResFile = async (res) => {
   try {
     const modules = `export default ${res}`;
-    await execa('echo', [ modules ]).stdout.pipe(fs.createWriteStream(`${rootDir}/template/modules.js`));
+    await writeFile(modules, `${rootDir}/template/modules.js`);
+    const brickBaseDirExits = await dirExits(`${rootDir}/template/brick-base`);
 
-    // await execa('git', [ 'clone', 'git@github.com:cravatcat/brick-base.git' ], {
-    //   cwd: `${rootDir}/template/`,
-    // });
+    if(!brickBaseDirExits) {
+      console.log('git clone git@github.com:cravatcat/brick-base.git');
+      await execa('git', [ 'clone', 'git@github.com:cravatcat/brick-base.git' ], {
+        cwd: `${rootDir}/template/`,
+      })
+      console.log('git clone done');
+    }
+  
     await execa('cp', [ 'modules.js', './brick-base/src/mock.js' ], {
       cwd: `${rootDir}/template/`,
     });
+    console.log('复制mock文件成功');
 
-    // console.log('npm install start');
-    // await execa('npm', [ 'install' ], {
-    //   cwd: `${rootDir}/template/brick-base/`,
-    // });
-    // console.log('npm install done');
-
+    const nodeModulesDirExits = await dirExits(`${rootDir}/template/brick-base/node_modules`);
+    if(!nodeModulesDirExits) {
+      console.log('install...');
+      await execa('npm', [ 'install' ], {
+        cwd: `${rootDir}/template/brick-base/`,
+      });
+    }
+   
+    console.log('build...');
     await execa('npm', [ 'run', 'build' ], {
       cwd: `${rootDir}/template/brick-base/`,
     });
-    console.log('-----all done-----');
+    console.log('build完成');
   } catch (error) {
     console.log(error);
+    execa('rm', ['-rf', '*'], {
+      cwd: `${rootDir}/template/`
+    });
   }
 };
-
 
 module.exports = {
   updateResFile,
